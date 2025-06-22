@@ -1,9 +1,11 @@
 package main;
 
 import java.io.File;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.*;
 import java.util.stream.Collectors;
 
 public class FileManager {
@@ -52,26 +54,88 @@ public class FileManager {
         return fileNames;
     }
     
+    public boolean addFile(String fileName) throws FileOperationException {
+        try {
+            Path filePath = Paths.get(rootDirectory, fileName);
+            
+            Files.createFile(filePath);
+            
+            String defaultContent = "File created by LockedMe.com\n" +
+                                  "Created on: " + new Date() + "\n" +
+                                  "File name: " + fileName + "\n";
+            Files.write(filePath, defaultContent.getBytes());
+            
+            return true;
+            
+        } catch (IOException e) {
+            throw new FileOperationException("Failed to create file: " + fileName, e);
+        }
+    }
+    
+
+    public boolean deleteFile(String fileName) throws FileOperationException {
+        try {
+            Path filePath = Paths.get(rootDirectory, fileName);
+            
+            if (!Files.exists(filePath)) {
+                throw new FileOperationException("File not found: " + fileName);
+            }
+            
+            Files.delete(filePath);
+            return true;
+            
+        } catch (IOException e) {
+            throw new FileOperationException("Failed to delete file: " + fileName, e);
+        }
+    }
+    
+
+    public SearchResult searchFile(String fileName) throws FileOperationException {
+        Path filePath = Paths.get(rootDirectory, fileName);
+        
+        if (Files.exists(filePath) && Files.isRegularFile(filePath)) {
+            try {
+                return new SearchResult(
+                    true,
+                    fileName,
+                    filePath.toString(),
+                    Files.size(filePath),
+                    Files.getLastModifiedTime(filePath).toString()
+                );
+            } catch (IOException e) {
+                throw new FileOperationException("Error reading file information: " + fileName, e);
+            }
+        } else {
+            return new SearchResult(false, fileName, "", 0, "");
+        }
+    }
+    
+
+    public boolean fileExists(String fileName) {
+        return getFilesInAscendingOrder().stream()
+                .anyMatch(f -> f.equalsIgnoreCase(fileName));
+    }
+    
+
+    public boolean fileExistsCaseSensitive(String fileName) {
+        Path filePath = Paths.get(rootDirectory, fileName);
+        return Files.exists(filePath) && Files.isRegularFile(filePath);
+    }
+    
+
+    public List<String> findSimilarFiles(String fileName) {
+        return getFilesInAscendingOrder().stream()
+                .filter(f -> f.toLowerCase().contains(fileName.toLowerCase()))
+                .limit(5)
+                .collect(Collectors.toList());
+    }
 
     public String getRootDirectory() {
         return rootDirectory;
     }
     
-
     public boolean directoryExists() {
         File directory = new File(rootDirectory);
         return directory.exists() && directory.isDirectory();
-    }
-}
-
-
-@SuppressWarnings("serial")
-class FileOperationException extends Exception {
-    public FileOperationException(String message) {
-        super(message);
-    }
-    
-    public FileOperationException(String message, Throwable cause) {
-        super(message, cause);
     }
 }
