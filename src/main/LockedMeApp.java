@@ -1,6 +1,5 @@
 package main;
 
-
 import java.util.*;
 
 /**
@@ -13,364 +12,194 @@ public class LockedMeApp {
     
     private static final String APP_NAME = "LockedMe.com";
     private static final String DEVELOPER_NAME = "ElderDragon";
-    private static final String VERSION = "2.0";
+    private static final String VERSION = "3.0";
     private static final String ROOT_DIRECTORY = "./lockedme_files";
     
     private static Scanner scanner = new Scanner(System.in);
-    
-    private static FileManager fileManager = new FileManager(ROOT_DIRECTORY);
+    private static FileManager fileManager = new FileManager();
+    private static MenuHandler menuHandler = new MenuHandler();
+    private static InputValidator inputValidator = new InputValidator();
     
     public static void main(String[] args) {
         try {
-            initializeApplication();
             displayWelcomeScreen();
-            runMainMenu();
+            runApplication();
         } catch (Exception e) {
             System.err.println("An unexpected error occurred: " + e.getMessage());
             e.printStackTrace();
         } finally {
-            if (scanner != null) {
-                scanner.close();
-            }
+            scanner.close();
         }
-    }
-
-    private static void initializeApplication() {
-        System.out.println("Initializing " + APP_NAME + "...");
-        fileManager.createRootDirectory();
-        System.out.println("Application initialized successfully!\n");
     }
 
     private static void displayWelcomeScreen() {
-        System.out.println("=".repeat(60));
-        System.out.println("           WELCOME TO " + APP_NAME);
-        System.out.println("=".repeat(60));
-        System.out.println("Application Name: " + APP_NAME);
+        System.out.println("=========================================");
+        System.out.println("    Welcome to " + APP_NAME);
+        System.out.println("=========================================");
         System.out.println("Developer: " + DEVELOPER_NAME);
         System.out.println("Version: " + VERSION);
-        System.out.println("=".repeat(60));
-        System.out.println("\nFile Management System");
-        System.out.println("Manage your files with ease!");
-        System.out.println("\n" + "=".repeat(60) + "\n");
+        System.out.println("=========================================");
+        System.out.println();
     }
 
-    private static void runMainMenu() {
-        boolean running = true;
+    private static void runApplication() {
+        boolean continueRunning = true;
         
-        while (running) {
+        while (continueRunning) {
             try {
-                displayMainMenu();
-                int choice = getUserChoice();
+                menuHandler.displayMainMenu();
+                int choice = inputValidator.getValidMenuChoice(scanner, 1, 3);
                 
                 switch (choice) {
                     case 1:
-                        displayFilesInAscendingOrder();
+                        handleDisplayFiles();
                         break;
                     case 2:
-                        runFileOperationsMenu();
+                        handleFileOperations();
                         break;
                     case 3:
-                        running = exitApplication();
+                        continueRunning = false;
+                        displayExitMessage();
                         break;
                     default:
-                        System.out.println("Invalid option! Please select a valid option (1-3).");
-                        waitForUser();
-                        break;
+                        System.out.println("Invalid option. Please try again.");
                 }
-            } catch (InputMismatchException e) {
-                System.out.println("Invalid input! Please enter a number between 1 and 3.");
-                scanner.nextLine(); // Clear invalid input
-                waitForUser();
+                
+                if (continueRunning) {
+                    System.out.println("\nPress Enter to continue...");
+                    scanner.nextLine();
+                    clearScreen();
+                }
+                
             } catch (Exception e) {
-                System.out.println("An error occurred: " + e.getMessage());
-                waitForUser();
+                System.err.println("Error in main menu: " + e.getMessage());
+                System.out.println("Please try again.");
             }
         }
     }
-    
 
-    private static void displayMainMenu() {
-        clearScreen();
-        System.out.println("MAIN MENU");
-        System.out.println("---------");
-        System.out.println("1. Display Files in Ascending Order");
-        System.out.println("2. File Operations");
-        System.out.println("3. Exit Application");
-        System.out.print("\nEnter your choice (1-3): ");
+    private static void handleDisplayFiles() {
+        System.out.println("\n=== Files in Current Directory (Ascending Order) ===");
+        try {
+            fileManager.displayFilesAscending();
+        } catch (Exception e) {
+            System.err.println("Error displaying files: " + e.getMessage());
+        }
     }
-    
 
-    private static void runFileOperationsMenu() {
-        boolean inSubMenu = true;
+    private static void handleFileOperations() {
+        boolean backToMain = false;
         
-        while (inSubMenu) {
+        while (!backToMain) {
             try {
-                displayFileOperationsMenu();
-                int choice = getUserChoice();
+                menuHandler.displayFileOperationsMenu();
+                int choice = inputValidator.getValidMenuChoice(scanner, 1, 4);
                 
                 switch (choice) {
                     case 1:
-                        addFile();
+                        handleAddFile();
                         break;
                     case 2:
-                        deleteFile();
+                        handleDeleteFile();
                         break;
                     case 3:
-                        searchFile();
+                        handleSearchFile();
                         break;
                     case 4:
-                        inSubMenu = false; 
+                        backToMain = true;
                         break;
                     default:
-                        System.out.println("Invalid option! Please select a valid option (1-4).");
-                        waitForUser();
-                        break;
+                        System.out.println("Invalid option. Please try again.");
                 }
-            } catch (InputMismatchException e) {
-                System.out.println("Invalid input! Please enter a number between 1 and 4.");
-                scanner.nextLine(); 
-                waitForUser();
+                
+                if (!backToMain) {
+                    System.out.println("\nPress Enter to continue...");
+                    scanner.nextLine();
+                }
+                
             } catch (Exception e) {
-                System.out.println("An error occurred: " + e.getMessage());
-                waitForUser();
+                System.err.println("Error in file operations menu: " + e.getMessage());
+                System.out.println("Please try again.");
             }
         }
     }
-    
 
-    private static void displayFileOperationsMenu() {
-        clearScreen();
-        System.out.println("FILE OPERATIONS MENU");
-        System.out.println("=".repeat(20));
-        System.out.println("1. Add a File");
-        System.out.println("2. Delete a File");
-        System.out.println("3. Search for a File");
-        System.out.println("4. Return to Main Menu");
-        System.out.print("\nEnter your choice (1-4): ");
-    }
-    
-
-    private static void addFile() {
-        clearScreen();
-        System.out.println("ADD FILE");
-        System.out.println("=".repeat(15));
-        
+    private static void handleAddFile() {
+        System.out.println("\n=== Add File ===");
         try {
-            System.out.print("Enter the file name to add (with extension): ");
-            scanner.nextLine();
+            System.out.print("Enter file name to add: ");
             String fileName = scanner.nextLine().trim();
             
-            if (!InputValidator.isValidFileName(fileName)) {
-                System.out.println("Error: Invalid file name!");
-                System.out.println("File names cannot contain: < > : \" / \\ | ? *");
-                System.out.println("File name cannot be empty.");
-                waitForUser();
-                return;
-            }
-            
-            if (fileManager.fileExists(fileName)) {
-                System.out.println("Warning: File '" + fileName + "' already exists!");
-                System.out.print("Do you want to overwrite it? (y/n): ");
-                String confirmation = scanner.nextLine().trim().toLowerCase();
-                
-                if (!confirmation.equals("y") && !confirmation.equals("yes")) {
-                    System.out.println("File addition cancelled.");
-                    waitForUser();
-                    return;
-                }
-            }
-            
-            boolean success = fileManager.addFile(fileName);
-            
-            if (success) {
-                System.out.println("Success: File '" + fileName + "' has been added successfully!");
-                System.out.println("Location: " + ROOT_DIRECTORY + "/" + fileName);
-            } else {
-                System.out.println("Error: Failed to add file '" + fileName + "'");
-            }
-            
-        } catch (FileOperationException e) {
-            System.out.println("File Operation Error: " + e.getMessage());
-        } catch (Exception e) {
-            System.out.println("Unexpected error: " + e.getMessage());
-        }
-        
-        waitForUser();
-    }
-    
-
-    private static void deleteFile() {
-        clearScreen();
-        System.out.println("DELETE FILE");
-        System.out.println("=".repeat(15));
-        
-        try {
-            List<String> files = fileManager.getFilesInAscendingOrder();
-            
-            if (files.isEmpty()) {
-                System.out.println("No files available to delete.");
-                waitForUser();
-                return;
-            }
-            
-            System.out.println("Available files:");
-            System.out.println("-".repeat(20));
-            for (int i = 0; i < files.size(); i++) {
-                System.out.println((i + 1) + ". " + files.get(i));
-            }
-            System.out.println("-".repeat(20));
-            
-            System.out.print("\nEnter the exact file name to delete (case-sensitive): ");
-            scanner.nextLine(); 
-            String fileName = scanner.nextLine().trim();
-            
-            if (fileName.isEmpty()) {
-                System.out.println("Error: File name cannot be empty!");
-                waitForUser();
-                return;
-            }
-            
-            if (!fileManager.fileExistsCaseSensitive(fileName)) {
-                System.out.println("Error: File Not Found (FNF)");
-                System.out.println("The file '" + fileName + "' does not exist in the directory.");
-                System.out.println("Note: File names are case-sensitive for deletion.");
-                waitForUser();
-                return;
-            }
-            
-            System.out.print("Are you sure you want to delete '" + fileName + "'? (y/n): ");
-            String confirmation = scanner.nextLine().trim().toLowerCase();
-            
-            if (confirmation.equals("y") || confirmation.equals("yes")) {
-                boolean success = fileManager.deleteFile(fileName);
-                
+            if (inputValidator.isValidFileName(fileName)) {
+                boolean success = fileManager.addFile(fileName);
                 if (success) {
-                    System.out.println("Success: File '" + fileName + "' has been deleted successfully!");
+                    System.out.println("File '" + fileName + "' added successfully!");
                 } else {
-                    System.out.println("Error: Failed to delete file '" + fileName + "'");
+                    System.out.println("Failed to add file '" + fileName + "'. File may already exist.");
                 }
             } else {
-                System.out.println("File deletion cancelled.");
+                System.out.println("Invalid file name. Please enter a valid file name.");
             }
-            
-        } catch (FileOperationException e) {
-            System.out.println("File Operation Error: " + e.getMessage());
         } catch (Exception e) {
-            System.out.println("Unexpected error: " + e.getMessage());
+            System.err.println("Error adding file: " + e.getMessage());
         }
-        
-        waitForUser();
     }
-    
 
-    private static void searchFile() {
-        clearScreen();
-        System.out.println("SEARCH FILE");
-        System.out.println("=".repeat(15));
-        
+    private static void handleDeleteFile() {
+        System.out.println("\n=== Delete File ===");
         try {
-            System.out.print("Enter the file name to search (case-sensitive): ");
-            scanner.nextLine();
+            System.out.print("Enter file name to delete (case-sensitive): ");
             String fileName = scanner.nextLine().trim();
             
-            if (fileName.isEmpty()) {
-                System.out.println("Error: File name cannot be empty!");
-                waitForUser();
-                return;
-            }
-            
-            SearchResult result = fileManager.searchFile(fileName);
-            
-            if (result.isFound()) {
-                System.out.println("SEARCH SUCCESSFUL");
-                System.out.println("=".repeat(20));
-                System.out.println("File Name: " + result.getFileName());
-                System.out.println("Full Path: " + result.getFullPath());
-                System.out.println("File Size: " + ApplicationUtils.formatFileSize(result.getFileSize()));
-                System.out.println("Last Modified: " + result.getLastModified());
-                System.out.println("Status: File found successfully!");
-            } else {
-                System.out.println("SEARCH UNSUCCESSFUL");
-                System.out.println("=".repeat(20));
-                System.out.println("File '" + fileName + "' was not found in the directory.");
-                System.out.println("Note: Search is case-sensitive.");
-                
-                List<String> similarFiles = fileManager.findSimilarFiles(fileName);
-                if (!similarFiles.isEmpty()) {
-                    System.out.println("\nDid you mean one of these files?");
-                    for (String similar : similarFiles) {
-                        System.out.println("  - " + similar);
-                    }
+            if (inputValidator.isValidFileName(fileName)) {
+                boolean success = fileManager.deleteFile(fileName);
+                if (success) {
+                    System.out.println("File '" + fileName + "' deleted successfully!");
+                } else {
+                    System.out.println("File Not Found (FNF): '" + fileName + "' does not exist.");
                 }
+            } else {
+                System.out.println("Invalid file name. Please enter a valid file name.");
             }
-            
-        } catch (FileOperationException e) {
-            System.out.println("File Operation Error: " + e.getMessage());
         } catch (Exception e) {
-            System.out.println("Unexpected error: " + e.getMessage());
+            System.err.println("Error deleting file: " + e.getMessage());
         }
-        
-        waitForUser();
     }
-    
 
-    private static int getUserChoice() {
-        return scanner.nextInt();
-    }
-    
- 
-    private static void displayFilesInAscendingOrder() {
-        clearScreen();
-        System.out.println("FILES IN ASCENDING ORDER");
-        System.out.println("=".repeat(40));
-        
+    private static void handleSearchFile() {
+        System.out.println("\n=== Search File ===");
         try {
-            List<String> files = fileManager.getFilesInAscendingOrder();
-            
-            if (files.isEmpty()) {
-                System.out.println("No files found in the directory.");
-                System.out.println("Directory path: " + ROOT_DIRECTORY);
-            } else {
-                System.out.println("Found " + files.size() + " file(s):");
-                System.out.println("-".repeat(40));
-                
-                for (int i = 0; i < files.size(); i++) {
-                    System.out.println((i + 1) + ". " + files.get(i));
+            System.out.print("Enter file name to search (case-sensitive): ");
+            String fileName = scanner.nextLine().trim();
+            if (inputValidator.isValidFileName(fileName)) {
+                boolean found = fileManager.searchFile(fileName);
+                if (found) {
+                    System.out.println("Search Result: File '" + fileName + "' found successfully!");
+                } else {
+                    System.out.println("Search Result: File '" + fileName + "' not found in the directory.");
                 }
+            } else {
+                System.out.println("Invalid file name. Please enter a valid file name.");
             }
-            
         } catch (Exception e) {
-            System.out.println("Error retrieving files: " + e.getMessage());
-        }
-        
-        System.out.println("\n" + "=".repeat(40));
-        waitForUser();
-    }
-    
-
-    private static boolean exitApplication() {
-        clearScreen();
-        System.out.println("Are you sure you want to exit? (y/n): ");
-        scanner.nextLine(); 
-        String confirmation = scanner.nextLine().trim().toLowerCase();
-        
-        if (confirmation.equals("y") || confirmation.equals("yes")) {
-            System.out.println("\nThank you for using " + APP_NAME + "!");
-            System.out.println("Goodbye!");
-            return false;
-        } else {
-            return true;
+            System.err.println("Error searching file: " + e.getMessage());
         }
     }
     
-
-    private static void waitForUser() {
-        System.out.print("\nPress Enter to continue...");
-        scanner.nextLine(); 
+    private static void displayExitMessage() {
+        System.out.println("\n=========================================");
+        System.out.println("Thank you for using " + APP_NAME + "!");
+        System.out.println("Application closed successfully.");
+        System.out.println("=========================================");
     }
 
     private static void clearScreen() {
-        System.out.print("\033[2J\033[H");
-        System.out.flush();
+        try {
+             new ProcessBuilder("cmd", "/c", "cls").inheritIO().start().waitFor();
+        } catch (Exception e) {
+            for (int i = 0; i < 3; i++) {
+                System.out.println();
+            }
+        }
     }
 }
